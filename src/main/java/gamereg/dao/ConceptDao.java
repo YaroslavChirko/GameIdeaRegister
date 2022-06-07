@@ -10,7 +10,11 @@ public class ConceptDao {
 	
 	public ConceptDao (Connection conn) {
 		this.conn = conn;
-			
+		init();
+	}
+	
+	private void init() {
+		createTables();
 	}
 	
 	private void createTables() {
@@ -21,8 +25,11 @@ public class ConceptDao {
 				+ "description VARCHAR(2000),"
 				+ "character_id INT,"
 				+ "FOREIGN KEY (character_id) REFERENCES Characters(id))";
+		
+		String createPlayerTable="";
+		
 		try(PreparedStatement createStatement = conn.prepareStatement(createConceptTableStr)){
-			createStatement.executeUpdate();
+			createStatement.addBatch();
 		}catch(SQLException e) {
 			System.out.println("SQLException occured in createTables: " + e.getMessage());
 		}
