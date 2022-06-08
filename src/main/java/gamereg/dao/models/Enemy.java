@@ -1,12 +1,20 @@
 package gamereg.dao.models;
 
+import gamereg.dao.Column;
+
 public class Enemy implements GameCharacter {
 
+	@Column(pk = true, unique = true, nullable = false)
 	private int id;
+	@Column (size = 20)
 	private String name;
+	@Column (size = 500)
 	private String appearance;
+	@Column (size = 500)
 	private String powers;
+	@Column (size = 500)
 	private String movePattern;
+	
 	public int getId() {
 		return id;
 	}

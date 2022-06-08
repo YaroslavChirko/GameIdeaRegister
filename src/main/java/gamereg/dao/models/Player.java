@@ -1,17 +1,24 @@
 package gamereg.dao.models;
 
+import gamereg.dao.Column;
+
 /*
  * even though this class implements GameCharacter interface it would have it's own table for easier table creation
  * */
 public class Player implements GameCharacter {
 
 	//auto generated on the database
+	@Column(pk = true, unique = true, nullable = false)
 	private int id;
 	
 	//Should add checks for length of fields
+	@Column(name = "name", size = 20)
 	private String playerName;
+	@Column(name = "powers", size = 500)
 	private String playerPowers;
+	@Column(name = "appearance", size = 500)
 	private String playerAppearance;
+	@Column(name = "story", size = 2000)
 	private String playerStory;
 	
 	public int getId() {
