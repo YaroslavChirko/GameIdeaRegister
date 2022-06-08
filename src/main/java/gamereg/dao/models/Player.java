@@ -8,7 +8,7 @@ public class Player implements GameCharacter {
 	//auto generated on the database
 	private int id;
 	
-	
+	//Should add checks for length of fields
 	private String playerName;
 	private String playerPowers;
 	private String playerAppearance;

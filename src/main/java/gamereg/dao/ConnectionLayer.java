@@ -28,7 +28,7 @@ private Connection conn;
 			this.conn = DriverManager.getConnection(dbProps.getProperty("url"),
 					dbProps.getProperty("username"),
 					dbProps.getProperty("pass"));
-			
+			TableInitializer.initTables(conn);
 		}catch(IOException | ClassNotFoundException | SQLException e){
 			
 			System.out.println("Exception occured: "+e.getMessage());

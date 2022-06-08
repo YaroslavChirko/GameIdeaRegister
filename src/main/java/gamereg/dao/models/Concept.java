@@ -4,11 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Concept {
-	//generated on the db
-	private int id;
+	//title must be unique, therefore it is used as Primary Key
 	private String title;
 	private String description;
-	private String genre;
+	private Genre genre;
 	
 	private List<GameCharacter> characters;
 	
@@ -18,16 +17,8 @@ public class Concept {
 	public Concept(String title, String description, String genre, List<GameCharacter> characters) {
 		this.title = title;
 		this.description = description;
-		this.genre = genre;
+		this.genre = Genre.valueOf(genre);
 		this.characters = characters;
-	}
-
-	public int getId() {
-		return id;
-	}
-
-	public void setId(int id) {
-		this.id = id;
 	}
 
 	public String getTitle() {
@@ -47,11 +38,11 @@ public class Concept {
 	}
 
 	public String getGenre() {
-		return genre;
+		return genre.toString();
 	}
 
 	public void setGenre(String genre) {
-		this.genre = genre;
+		this.genre = Genre.valueOf(genre);
 	}
 
 	public List<GameCharacter> getCharacters() {
@@ -67,6 +58,17 @@ public class Concept {
 		return "Game " + title + "\n" + description + "\n\n, genre:" + genre;
 	}
 	
+	
+	public enum Genre{
+		ACTION,
+		ADVENTURE,
+		FIGHTING,
+		PUZZLE,
+		RPG,
+		RACING,
+		SIM,
+		STRATEGY
+	}
 	
 	
 }
