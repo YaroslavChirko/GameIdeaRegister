@@ -8,7 +8,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.SQLType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,13 +17,18 @@ import gamereg.dao.models.Player;
 public class ConceptDao {
 
 	private Connection conn;
+	private String conceptsTableName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
 	
 	public ConceptDao (Connection conn) {
 		this.conn = conn;
 		//check if table for concept exists
 	}
 	
-	/*
+	
+	
+	
+	
+	/**
 	 * Used to map resultSet row to a Concept object
 	 * 
 	 * should be reworked with annotation to ensure proper naming correlation between columns and fields
@@ -35,32 +39,28 @@ public class ConceptDao {
 		try {
 			length = rsMeta.getColumnCount();
 
-			Class conceptClass = tempConcept.getClass();
-			//TODO rework with annotation
-			Method[] methods = conceptClass.getMethods();
+			Class<? extends Concept> conceptClass = tempConcept.getClass();
 			
 			for(int i = 0; i<length; i++) {
 				String colName = rsMeta.getColumnName(i);
-				Method fieldSetter = null;
+				JDBCType colType = JDBCType.valueOf(rsMeta.getColumnType(i));
+				//TODO perhaps create ColumnSetter(columnName="name") annotation
 				
-				//looking for a method to set properties
-				for(Method method : methods) {
-					if(method.getName().contains("set*"+colName)) {
-						fieldSetter = method;
-						break;
-					}
-				}
+				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(colType.getName()));
+				//TODO should also add check for genre to cast properly
+				Method fieldSetter = conceptClass.getMethod("set"+AnnotationFunctions.getFieldNameByRowName(colName, Concept.class), type);
 				
 				/*used to set the corresponding field properly, if no setter found i.e. no provided or called something else it is skipped,
 				this way only concepts but not their characters would be read*/ 
-				if(fieldSetter != null) {
-					Class [] patrameterTypes = fieldSetter.getParameterTypes();						
-					fieldSetter.invoke(fieldSetter, patrameterTypes[0].cast(rs.getObject(i)));
+				if(fieldSetter != null) {				
+					fieldSetter.invoke(fieldSetter, type.cast(rs.getObject(i)));
 				}	
 			}
 			
 			
-		} catch (SQLException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (SQLException | IllegalAccessException | IllegalArgumentException 
+				| InvocationTargetException | NoSuchMethodException 
+				| SecurityException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
 		return tempConcept;
@@ -72,8 +72,8 @@ public class ConceptDao {
 	public List<Concept> getConcepts(){
 		List<Concept> concepts = new ArrayList<>();
 		
-		//
-		String selectConceptsStr = "SELECT * FROM Concepts;";
+		
+		String selectConceptsStr = "SELECT * FROM "+conceptsTableName+";";
 		
 		try(PreparedStatement selectStatement = conn.prepareStatement(selectConceptsStr)){
 			ResultSet rs = selectStatement.executeQuery();
@@ -96,8 +96,12 @@ public class ConceptDao {
 	}
 	
 	public void addConcept(Concept concept) {
-		//TODO change to annotation name retrieval
-		String addConceptStr = "INSERT INTO Concepts (title, description, genre) VALUES (?, ?, ?)";
+		String titleColName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
+		String descriptionColName = AnnotationFunctions.getRowNameByFieldName("description", Concept.class);
+		String genreColName = AnnotationFunctions.getRowNameByFieldName("genre", Concept.class);
+		
+		String addConceptStr = "INSERT INTO "+conceptsTableName+" ("+ titleColName+","
+				+ descriptionColName+","+ genreColName+") VALUES (?, ?, ?)";
 		try(PreparedStatement preparedAddConcept = conn.prepareStatement(addConceptStr)){
 			
 			preparedAddConcept.setString(1, concept.getTitle());
@@ -129,21 +133,26 @@ public class ConceptDao {
 		boolean isTitleChanged = false;
 		boolean isDescriptionChanged = false;
 		boolean isGenreChanged = false;
-		StringBuilder updateConceptByNameStr = new StringBuilder("UPDATE Concepts SET"); 
+		String titleColName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
+		String descriptionColName = AnnotationFunctions.getRowNameByFieldName("description", Concept.class);
+		String genreColName = AnnotationFunctions.getRowNameByFieldName("genre", Concept.class);
+		
+		
+		StringBuilder updateConceptByNameStr = new StringBuilder("UPDATE "+conceptsTableName+" SET"); 
 		if(!retrievedConcept.getTitle().equals(updatedConcept.getTitle())) {
-			//for now just title, get the title column name from annotation when it's added
-			//TODO change to annotation name retrieval
-			updateConceptByNameStr.append("title = ?");
+			updateConceptByNameStr.append(titleColName+" = ?");
 			isTitleChanged = true;
 		}
 		if(!retrievedConcept.getDescription().equals(updatedConcept.getDescription())) {
-			//TODO change to annotation name retrieval
-			updateConceptByNameStr.append(", description = ?");
+			if(isTitleChanged) updateConceptByNameStr.append(", ");
+			
+			updateConceptByNameStr.append(descriptionColName+" = ?");
 			isDescriptionChanged = true;
 		}
 		if(!retrievedConcept.getGenre().equals(updatedConcept.getGenre())) {
-			//TODO change to annotation name retrieval
-			updateConceptByNameStr.append(", genre = ?");
+			if(isTitleChanged || isDescriptionChanged) updateConceptByNameStr.append(", ");
+			
+			updateConceptByNameStr.append(genreColName+" = ?");
 			isGenreChanged = true;
 		}
 		
@@ -151,8 +160,7 @@ public class ConceptDao {
 			System.out.println("No changes made, returning");
 			return;
 		}
-		//TODO change to annotation name retrieval
-		updateConceptByNameStr.append("WHERE title = ?;");
+		updateConceptByNameStr.append("WHERE"+titleColName+" = ?;");
 		
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateConceptByNameStr.toString())){
 			
@@ -182,7 +190,8 @@ public class ConceptDao {
 	}
 	
 	public Concept getConceptByTitle(String title) {
-		String getConceptByNameStr = "SELECT * FROM Concepts WHERE title = ?";
+		String titleColumnName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
+		String getConceptByNameStr = "SELECT * FROM "+conceptsTableName+" WHERE"+titleColumnName+" = ?";
 		
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(getConceptByNameStr)){
 			preparedUpdate.setString(1, title);

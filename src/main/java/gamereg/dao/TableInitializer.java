@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.Statement;
 
+import gamereg.dao.annotations.Column;
 import gamereg.dao.models.Concept;
 import gamereg.dao.models.Enemy;
 import gamereg.dao.models.Player;
@@ -14,11 +15,7 @@ public class TableInitializer {
 	
 	public static String columnCreationLine(Field field, Column column) {
 		StringBuilder columnLine = new StringBuilder();
-		if(column.name().equals("")) {
-			columnLine.append(field.getName());
-		}else {
-			columnLine.append(column.name());
-		}
+		columnLine.append(AnnotationFunctions.getFieldNameFromAnnotation(field, column));
 		
 		String type = field.getType().getName();
 		
@@ -51,7 +48,7 @@ public class TableInitializer {
 	public static String writeTableCreateString(Object obj, String tableName, boolean hasForeign) {
 		StringBuilder createTableStr = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
 		createTableStr.append(tableName+"(");
-		Class objClass = obj.getClass();
+		Class<? extends Object> objClass = obj.getClass();
 		Field[] objFields = objClass.getFields();
 		for(Field objField : objFields) {
 			Column col = objField.getAnnotation(Column.class);
@@ -73,24 +70,37 @@ public class TableInitializer {
 	}
 	
 	public static void initTables(Connection conn) {
-		String createConceptTableStr = writeTableCreateString(new Concept(), "Concepts", false);
+		String conceptsName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
+		String createConceptTableStr = writeTableCreateString(new Concept(), conceptsName, false);
 
-		String createPlayerTableStr= writeTableCreateString(new Player(), "Players",true);
-		createPlayerTableStr += "game_id INT NOT NULL, FOREIGN KEY game_id REFERENCES Concepts(id));";
-		
-		String createEnemyTableStr=writeTableCreateString( new Enemy(), "Enemies", true);				
-		createEnemyTableStr += "game_id INT NOT NULL, FOREIGN KEY game_id REFERENCES Concepts(id));";
-		
-		try(Statement createStatement = conn.createStatement()){
-			createStatement.addBatch(createConceptTableStr.toString());
-			createStatement.addBatch(createPlayerTableStr);
-			createStatement.addBatch(createEnemyTableStr);
+		try {
+			Field conceptTitleField = Concept.class.getField("title");
+			String conceptTitleColumn = AnnotationFunctions.getFieldNameFromAnnotation(conceptTitleField);
 			
-			//for now I don't check which one gone wrong
-			createStatement.executeBatch();
+			String playersName = AnnotationFunctions.getTableNameFromAnnotation(Player.class);
+			String createPlayerTableStr= writeTableCreateString(new Player(),playersName,true);
+			createPlayerTableStr += "game_name INT NOT NULL, FOREIGN KEY game_name REFERENCES"+ conceptsName+"("+conceptTitleColumn+"));";//might add an annotation for foreign key but most probably won't
+			
+			String enemyName = AnnotationFunctions.getTableNameFromAnnotation(Enemy.class);
+			String createEnemyTableStr=writeTableCreateString( new Enemy(), enemyName, true);				
+			createEnemyTableStr += "game_name INT NOT NULL, FOREIGN KEY game_name REFERENCES"+ conceptsName+"("+conceptTitleColumn+"));";
+			
+			Statement createStatement = conn.createStatement();
+				createStatement.addBatch(createConceptTableStr.toString());
+				createStatement.addBatch(createPlayerTableStr);
+				createStatement.addBatch(createEnemyTableStr);
+				
+				//for now I don't check which one gone wrong
+				createStatement.executeBatch();
+			
+		} catch (NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
 		}catch(SQLException e) {
 			System.out.println("SQLException occured in createTables: " + e.getMessage());
 			throw new RuntimeException(e);
 		}
+		
+		
+		
 	}
 }

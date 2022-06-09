@@ -1,7 +1,9 @@
 package gamereg.dao.models;
 
-import gamereg.dao.Column;
+import gamereg.dao.annotations.Column;
+import gamereg.dao.annotations.Table;
 
+@Table
 public class Enemy implements GameCharacter {
 
 	@Column(pk = true, unique = true, nullable = false)

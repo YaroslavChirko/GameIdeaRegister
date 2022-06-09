@@ -1,10 +1,12 @@
 package gamereg.dao.models;
 
-import gamereg.dao.Column;
+import gamereg.dao.annotations.Column;
+import gamereg.dao.annotations.Table;
 
 /*
  * even though this class implements GameCharacter interface it would have it's own table for easier table creation
  * */
+@Table
 public class Player implements GameCharacter {
 
 	//auto generated on the database
@@ -13,13 +15,13 @@ public class Player implements GameCharacter {
 	
 	//Should add checks for length of fields
 	@Column(name = "name", size = 20)
-	private String playerName;
+	private String name;
 	@Column(name = "powers", size = 500)
-	private String playerPowers;
+	private String powers;
 	@Column(name = "appearance", size = 500)
-	private String playerAppearance;
+	private String appearance;
 	@Column(name = "story", size = 2000)
-	private String playerStory;
+	private String story;
 	
 	public int getId() {
 		return id;
@@ -31,43 +33,43 @@ public class Player implements GameCharacter {
 
 	@Override
 	public String getName() {
-		return playerName;
+		return name;
 	}
 	
-	public void setName(String playerName) {
-		this.playerName = playerName;
+	public void setName(String name) {
+		this.name = name;
 	}
 	
 	@Override
 	public String getPowers() {
-		return playerPowers;
+		return powers;
 	}
 	
 	
-	public void setPowers(String playerPowers) {
-		this.playerPowers = playerPowers;
+	public void setPowers(String powers) {
+		this.powers = powers;
 	}
 	
 	@Override
 	public String getAppearance() {
-		return playerAppearance;
+		return appearance;
 	}
 	
-	public void setAppearance(String playerAppearance) {
-		this.playerAppearance = playerAppearance;
+	public void setAppearance(String appearance) {
+		this.appearance = appearance;
 	}
 	
 	public String getStory() {
-		return playerStory;
+		return story;
 	}
 	
-	public void setStory(String playerStory) {
-		this.playerStory = playerStory;
+	public void setStory(String story) {
+		this.story = story;
 	}
 
 	@Override
 	public String toString() {
-		return "Player: "+playerName+",\nlooks like: "+playerAppearance+",\n"+playerStory+"\n special abilities: "+playerPowers;
+		return "Player: "+name+",\nlooks like: "+appearance+",\n"+story+"\n special abilities: "+powers;
 	}
 	
 	

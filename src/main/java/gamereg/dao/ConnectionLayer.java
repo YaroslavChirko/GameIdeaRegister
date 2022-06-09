@@ -1,11 +1,8 @@
 package gamereg.dao;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -24,7 +21,6 @@ private Connection conn;
 			dbProps.load(new FileReader(new File(pathToProperties)));
 
 			Class.forName(dbProps.getProperty("driver"));
-			
 			this.conn = DriverManager.getConnection(dbProps.getProperty("url"),
 					dbProps.getProperty("username"),
 					dbProps.getProperty("pass"));

@@ -1,10 +1,11 @@
 package gamereg.dao.models;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import gamereg.dao.Column;
+import gamereg.dao.annotations.Column;
+import gamereg.dao.annotations.Table;
 
+@Table
 public class Concept {
 	//title must be unique, therefore it is used as Primary Key
 	@Column(pk = true, unique = true, nullable = false, size = 100)
