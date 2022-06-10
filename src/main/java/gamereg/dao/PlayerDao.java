@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import gamereg.dao.models.GameCharacter;
 import gamereg.dao.models.Player;
 
 public class PlayerDao {
@@ -73,19 +74,43 @@ public class PlayerDao {
 			return rowToPlayerMapper(rs, rsMeta);
 			
 		}catch(SQLException e){
-			System.out.println("SQLException in getPlayers(): "+e.getMessage());
+			System.out.println("SQLException in getPlayerById(): "+e.getMessage());
 			
 			throw new RuntimeException(e);
 		}
 		
 	}
 	
+	public List<GameCharacter> getPlayersByGameName(String gameName){
+		List<GameCharacter> results = new ArrayList<>();
+		
+		String selectPlayersByGameStr = "SELECT * FROM "+playerTableName+" WHERE "+AnnotationFunctions.getRowNameByFieldName("game_name", Player.class)+"=?";
+		
+		try(PreparedStatement preparedSelectPlayersByGame = conn.prepareStatement(selectPlayersByGameStr)){
+			
+			preparedSelectPlayersByGame.setString(1, gameName);
+			
+			ResultSet rs = preparedSelectPlayersByGame.executeQuery();
+			ResultSetMetaData rsMeta = rs.getMetaData();
+			
+			while(rs.next()) {
+				results.add(rowToPlayerMapper(rs, rsMeta));
+			}
+			
+		}catch(SQLException e) {
+			System.out.println("SQLException in getPlayersByGameName(): "+e.getMessage());
+			throw new RuntimeException(e);
+		}
+		
+		return results;
+	}
+	
 	public void addPlayer(Player player, String conceptName) {
-		String name = AnnotationFunctions.getRowNameByFieldName("name", player);
-		String powers = AnnotationFunctions.getRowNameByFieldName("powers", player);
-		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", player);
-		String story = AnnotationFunctions.getRowNameByFieldName("story", player);
-		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", player);
+		String name = AnnotationFunctions.getRowNameByFieldName("name", Player.class);
+		String powers = AnnotationFunctions.getRowNameByFieldName("powers", Player.class);
+		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", Player.class);
+		String story = AnnotationFunctions.getRowNameByFieldName("story", Player.class);
+		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", Player.class);
 		
 		String insertPlayerStr = "INSERT INTO "+playerTableName+"("+name+","
 				+powers+","+appearance+","+story+","+game_title+") VALUES (?, ?, ?, ?, ?)";
@@ -99,7 +124,8 @@ public class PlayerDao {
 			
 			preparedInsert.executeUpdate();
 		}catch(SQLException e) {
-			System.out.println("");
+			System.out.println("SQLException in addPlayer(): "+e.getMessage());
+			throw new RuntimeException(e);
 		}
 		
 	}
@@ -109,6 +135,80 @@ public class PlayerDao {
 	 * @param updatedPlayer
 	 */
 	public void updatePlayer(Player updatedPlayer) {
+		StringBuffer updateStr = new StringBuffer("UPDATE "+playerTableName+" SET");
+		
+		String name = AnnotationFunctions.getRowNameByFieldName("name", Player.class);
+		String powers = AnnotationFunctions.getRowNameByFieldName("powers", Player.class);
+		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", Player.class);
+		String story = AnnotationFunctions.getRowNameByFieldName("story", Player.class);
+		
+		Player originalPlayer = getPlayerById(updatedPlayer.getId());
+		
+		boolean isNameUpdated, isPowersUpdated, isAppearanceUpdated, isStoryUpdated;
+		isNameUpdated = isPowersUpdated = isAppearanceUpdated = isStoryUpdated = false;
+		
+		if(!updatedPlayer.getName().equals(originalPlayer.getName())) {
+			updateStr.append(name+"="+updatedPlayer.getName());
+			isNameUpdated = true;
+		}
+		
+		if(!updatedPlayer.getPowers().equals(originalPlayer.getPowers())) {
+			if(isNameUpdated) {
+				updateStr.append(", ");
+			}
+			updateStr.append(powers+"="+updatedPlayer.getPowers());
+			isPowersUpdated = true;
+		}
+		
+		if(!updatedPlayer.getAppearance().equals(originalPlayer.getAppearance())) {
+			if(isNameUpdated || isPowersUpdated) {
+				updateStr.append(", ");
+			}
+			updateStr.append(appearance+"="+updatedPlayer.getAppearance());
+			isAppearanceUpdated = true;
+		}
+		
+		if(!updatedPlayer.getStory().equals(originalPlayer.getStory())) {
+			if(isNameUpdated || isPowersUpdated 
+					|| isAppearanceUpdated) {
+				updateStr.append(", ");
+			}
+			updateStr.append(story+"="+updatedPlayer.getStory());
+			isStoryUpdated = true;
+		}
+		
+		if(!(isNameUpdated && isPowersUpdated && isAppearanceUpdated && isStoryUpdated)) {
+			System.out.println("Nothing changed, returning");
+			return;
+		}else {
+			updateStr.append(");");
+		}
+		
+		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateStr.toString())){
+			int paramCount = 1;
+			
+			if(isNameUpdated) {
+				preparedUpdate.setString(paramCount, updatedPlayer.getName());
+				paramCount++;
+			}
+			if(isPowersUpdated) {
+				preparedUpdate.setString(paramCount, updatedPlayer.getPowers());
+				paramCount++;
+			}
+			if(isAppearanceUpdated) {
+				preparedUpdate.setString(paramCount, updatedPlayer.getAppearance());
+				paramCount++;
+			}
+			if(isStoryUpdated) {
+				preparedUpdate.setString(paramCount, updatedPlayer.getStory());
+				paramCount++;
+			}
+			
+			preparedUpdate.executeUpdate();
+		}catch(SQLException e) {
+			System.out.println("SQLException in updatePlayer(): "+e.getMessage());
+			throw new RuntimeException(e);
+		}
 		
 	}
 	

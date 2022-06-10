@@ -12,12 +12,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import gamereg.dao.models.Concept;
+import gamereg.dao.models.Enemy;
+import gamereg.dao.models.GameCharacter;
 import gamereg.dao.models.Player;
 
 public class ConceptDao {
 
 	private Connection conn;
 	private String conceptsTableName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
+	PlayerDao playerDao = new PlayerDao(this.conn);
+	EnemyDao enemyDao = new EnemyDao(this.conn);
 	
 	public ConceptDao (Connection conn) {
 		this.conn = conn;
@@ -83,7 +87,11 @@ public class ConceptDao {
 			
 			
 			while(rs.next()) {
-				concepts.add(rowToConceptMapper(rs, rsMeta));
+				Concept tempConcept = rowToConceptMapper(rs, rsMeta);
+				List<GameCharacter> characters  = playerDao.getPlayersByGameName(tempConcept.getTitle());
+				characters.addAll(enemyDao.getEnemyByGameName(tempConcept.getTitle()));
+				tempConcept.setCharacters(characters);
+				concepts.add(tempConcept);
 			}
 			
 			
@@ -210,8 +218,13 @@ public class ConceptDao {
 	
 
 	//add call to player and enemy dao to add them to this concept
-	public void addPlayer(Player player) {
-		
+	public void addPlayer(Player player, String conceptName) {
+		playerDao.addPlayer(player, conceptName);
 	}
+	
+	public void addEnemy(Enemy enemy, String conceptName) {
+		enemyDao.addEnemy(enemy, conceptName);
+	}
+	
 	
 }
