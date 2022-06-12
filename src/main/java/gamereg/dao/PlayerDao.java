@@ -11,6 +11,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import gamereg.dao.models.Enemy;
 import gamereg.dao.models.GameCharacter;
 import gamereg.dao.models.Player;
 
@@ -27,11 +28,13 @@ public class PlayerDao {
 		
 		try {
 			
-			for(int i = 0; i<rsMeta.getColumnCount(); i++) {
+			for(int i = 1; i<=rsMeta.getColumnCount(); i++) {
 				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i)));
-				String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), tempPlayer);
-				Method setterMethod = tempPlayer.getClass().getMethod("get"+fieldName, type);
-				setterMethod.invoke(tempPlayer, type.cast(row.getObject(i)));
+				if(AnnotationFunctions.isFieldColumnAnnotated(rsMeta.getColumnName(i), Player.class)){
+					String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), Player.class);
+					Method setterMethod = tempPlayer.getClass().getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
+					setterMethod.invoke(tempPlayer, type.cast(row.getObject(i)));
+				}
 			}
 			
 			
@@ -84,7 +87,7 @@ public class PlayerDao {
 	public List<GameCharacter> getPlayersByGameName(String gameName){
 		List<GameCharacter> results = new ArrayList<>();
 		
-		String selectPlayersByGameStr = "SELECT * FROM "+playerTableName+" WHERE "+AnnotationFunctions.getRowNameByFieldName("game_name", Player.class)+"=?";
+		String selectPlayersByGameStr = "SELECT * FROM "+playerTableName+" WHERE game_name=?";
 		
 		try(PreparedStatement preparedSelectPlayersByGame = conn.prepareStatement(selectPlayersByGameStr)){
 			

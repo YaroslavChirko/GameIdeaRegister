@@ -12,36 +12,37 @@ public class JavaTypeSQLTypeMapper {
 	 * @return class name 
 	 */
 	public static String mapSQLToJava(String typeName) {
-		int typeValue = JDBCType.valueOf(typeName).ordinal();
+		JDBCType typeValue = JDBCType.valueOf(typeName);
 		String result = null;
 		switch(typeValue) {
-			case Types.CHAR:
-			case Types.VARCHAR:
-			case Types.LONGVARCHAR:
+			case CHAR:
+			case VARCHAR:
+			case LONGVARCHAR:
 				result =  java.lang.String.class.getName();
-			
-			case Types.INTEGER:
-				result =  java.lang.Integer.class.getName();
-		
-			case Types.FLOAT:
-				result =  java.lang.Float.class.getName();
-				
-			case Types.DOUBLE:
-				result =  java.lang.Double.class.getName();
-				
-			case Types.BOOLEAN:
-				result =  java.lang.Boolean.class.getName();
-			
-			case Types.DATE:
+				break;
+			case INTEGER:
+				result =  int.class.getName();
+				break;
+			case FLOAT:
+				result =  float.class.getName();
+				break;
+			case DOUBLE:
+				result =  double.class.getName();
+				break;
+			case BOOLEAN:
+				result = boolean.class.getName();
+				break;
+			case DATE:
 				result =  java.time.LocalDate.class.getName();
-				
-			case Types.TIME:
+				break;
+			case TIME:
 				result =  java.time.LocalTime.class.getName();
-			
-			case Types.TIMESTAMP:
+				break;
+			case TIMESTAMP:
 				result =  java.time.LocalDateTime.class.getName();
-		
+				break;
 		}
+		
 		return result;
 			
 	}
@@ -51,33 +52,28 @@ public class JavaTypeSQLTypeMapper {
 	  * @return JDBCType representation of passed name
 	  */
 	public static JDBCType mapJavaToSQL(String className) {
-		
-		JDBCType result = null;
-		
-		switch(className) {
-			case "java.lang.String":
+			
+			JDBCType result = null;
+			
+			if(className.equals("java.lang.String") || className.equals("gamereg.dao.models.Concept$Genre")) {
 				result =  JDBCType.VARCHAR;
-			case "java.lang.Integer":
+			}else if(className.equals("java.lang.Integer") || className.equals("int")) {
 				result =  JDBCType.INTEGER;
-			case "java.lang.Float":
+			}else if(className.equals("java.lang.Float") || className.equals("float")) {
 				result =  JDBCType.FLOAT;
-			case "java.lang.Double":
+			}else if(className.equals("java.lang.Double") || className.equals("double")) {
 				result =  JDBCType.DOUBLE;
-			case "java.lang.Boolean":
+			}else if(className.equals("java.lang.Boolean") || className.equals("boolean")) {
 				result =  JDBCType.BOOLEAN;
-			case "java.time.LocalDate":
-			case "java.sql.Date":
+			}else if(className.equals("java.time.LocalDate")||className.contains("java.sql.Date")) {
 				result =  JDBCType.DATE;
-			case "java.time.LocalTime":
-			case "java.sql.Time":
+			}else if(className.equals("java.time.LocalTime") || className.equals("java.sql.Time")) {
 				result =  JDBCType.TIME;
-			case "java.time.LocalDateTime":
-			case "java.sql.Timestamp":
+			}else if(className.equals("java.time.LocalDateTime") || className.equals("java.sql.Timestamp")) {
 				result =  JDBCType.TIMESTAMP;
-				
-		}
-		
-		return result;
+			}
+			
+			return result;
 	}
 	
 }

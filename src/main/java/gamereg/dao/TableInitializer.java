@@ -45,11 +45,11 @@ public class TableInitializer {
 		return columnLine.toString();
 	}
 	
-	public static String writeTableCreateString(Object obj, String tableName, boolean hasForeign) {
+	public static String writeTableCreateString(Class obj, String tableName, boolean hasForeign) {
 		StringBuilder createTableStr = new StringBuilder("CREATE TABLE IF NOT EXISTS ");
 		createTableStr.append(tableName+"(");
-		Class<? extends Object> objClass = obj.getClass();
-		Field[] objFields = objClass.getFields();
+		//Class<? extends Object> objClass = obj.getClass();
+		Field[] objFields = obj.getDeclaredFields();
 		for(Field objField : objFields) {
 			Column col = objField.getAnnotation(Column.class);
 			if(col != null) {
@@ -64,26 +64,26 @@ public class TableInitializer {
 		if(hasForeign) {
 			return createTableStr.toString();
 		}else {
-			return createTableStr.substring(0,createTableStr.lastIndexOf(","))+");";
+			return createTableStr.toString().substring(0,createTableStr.toString().length() -1 )+");";
 		}
 		
 	}
 	
 	public static void initTables(Connection conn) {
 		String conceptsName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
-		String createConceptTableStr = writeTableCreateString(new Concept(), conceptsName, false);
+		String createConceptTableStr = writeTableCreateString(Concept.class, conceptsName, false);
 
 		try {
-			Field conceptTitleField = Concept.class.getField("title");
+			Field conceptTitleField = Concept.class.getDeclaredField("title");
 			String conceptTitleColumn = AnnotationFunctions.getFieldNameFromAnnotation(conceptTitleField);
 			
 			String playersName = AnnotationFunctions.getTableNameFromAnnotation(Player.class);
-			String createPlayerTableStr= writeTableCreateString(new Player(),playersName,true);
-			createPlayerTableStr += "game_name INT NOT NULL, FOREIGN KEY game_name REFERENCES"+ conceptsName+"("+conceptTitleColumn+"));";//might add an annotation for foreign key but most probably won't
+			String createPlayerTableStr= writeTableCreateString(Player.class,playersName,true);
+			createPlayerTableStr += "game_name VARCHAR NOT NULL, FOREIGN KEY (game_name) REFERENCES "+ conceptsName+"("+conceptTitleColumn+"));";//might add an annotation for foreign key but most probably won't
 			
 			String enemyName = AnnotationFunctions.getTableNameFromAnnotation(Enemy.class);
-			String createEnemyTableStr=writeTableCreateString( new Enemy(), enemyName, true);				
-			createEnemyTableStr += "game_name INT NOT NULL, FOREIGN KEY game_name REFERENCES"+ conceptsName+"("+conceptTitleColumn+"));";
+			String createEnemyTableStr=writeTableCreateString(Enemy.class, enemyName, true);				
+			createEnemyTableStr += "game_name VARCHAR NOT NULL, FOREIGN KEY (game_name) REFERENCES "+ conceptsName+"("+conceptTitleColumn+"));";
 			
 			Statement createStatement = conn.createStatement();
 				createStatement.addBatch(createConceptTableStr.toString());

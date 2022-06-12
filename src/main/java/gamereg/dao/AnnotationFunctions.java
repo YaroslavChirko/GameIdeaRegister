@@ -4,17 +4,19 @@ import java.lang.reflect.Field;
 
 import gamereg.dao.annotations.Column;
 import gamereg.dao.annotations.Table;
-import gamereg.dao.models.Concept;
+import gamereg.dao.models.Enemy;
 
 public class AnnotationFunctions {
 
-	public static String getTableNameFromAnnotation(Object entity) {
-		return getTableNameFromAnnotation(entity, entity.getClass().getAnnotation(Table.class));
+	public static String getTableNameFromAnnotation(Class entity) {
+		
+		Table t1 = (Table) entity.getAnnotation(Table.class);
+		return getTableNameFromAnnotation(entity, t1);
 	}
 	
-	public static String getTableNameFromAnnotation(Object entity, Table table) {
+	public static String getTableNameFromAnnotation(Class entity, Table table) {
 		String nameFromAnnotation = table.name();
-		if(nameFromAnnotation.equals(""))  nameFromAnnotation = entity.getClass().getSimpleName();
+		if(nameFromAnnotation.equals(""))  nameFromAnnotation = entity.getSimpleName();
 		
 		return nameFromAnnotation;
 	}
@@ -40,14 +42,16 @@ public class AnnotationFunctions {
 	 * @param fieldName
 	 * @return row name from the annotation
 	 */
-	public static String getRowNameByFieldName(String fieldName,Object entity) {
+	public static String getRowNameByFieldName(String fieldName,Class entity) {
 		String rowName = null;
-		try {
-			Field field = entity.getClass().getField(fieldName);
-			Column fieldColumn = field.getAnnotation(Column.class);
-			getFieldNameFromAnnotation(field,fieldColumn);
-		} catch (NoSuchFieldException | SecurityException e) {
-			e.printStackTrace();
+		if(AnnotationFunctions.isFieldColumnAnnotated(fieldName, entity)){
+			try {
+				Field field = entity.getDeclaredField(fieldName);
+				Column fieldColumn = field.getAnnotation(Column.class);
+				rowName = getFieldNameFromAnnotation(field,fieldColumn);
+			} catch (NoSuchFieldException | SecurityException e) {
+				e.printStackTrace();
+			}
 		}
 		return rowName;
 	}
@@ -59,9 +63,9 @@ public class AnnotationFunctions {
 	 * @param rowName
 	 * @return returns name of the corresponding field or null if no annotated field was found
 	 */
-	public static  String getFieldNameByRowName(String rowName, Object entity) {
+	public static  String getFieldNameByRowName(String rowName, Class entity) {
 		String fieldName = null;
-		Field[] fields = entity.getClass().getFields();
+		Field[] fields = entity.getDeclaredFields();
 		for(Field field : fields) {
 			if(field.isAnnotationPresent(Column.class)) {
 				String annotationName =  field.getAnnotation(Column.class).name();
@@ -77,6 +81,24 @@ public class AnnotationFunctions {
 			}
 		}
 		return fieldName;	
+	}
+	
+	
+	public static boolean isFieldColumnAnnotated(String rowName, Class entity) {
+		boolean isAnnotated = false;
+		if(!rowName.equals("")) {
+			Field[] fields = entity.getDeclaredFields();
+			
+			for(Field field : fields) {
+				if(field.isAnnotationPresent(Column.class) && 
+						(rowName.equals(field.getName().toLowerCase()) || rowName.equals(field.getAnnotation(Column.class).name()))) {
+					isAnnotated = true;
+				}
+			}
+			
+		}
+		
+		return isAnnotated;
 	}
 	
 }

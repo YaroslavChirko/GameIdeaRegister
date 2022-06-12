@@ -50,6 +50,14 @@ public class Concept {
 	public void setGenre(String genre) {
 		this.genre = Genre.valueOf(genre);
 	}
+	
+	public Genre getGenreEnum() {
+		return genre;
+	}
+	
+	public void setGenre(Genre genre) {
+		this.genre = genre;
+	}
 
 	public List<GameCharacter> getCharacters() {
 		return characters;

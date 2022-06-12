@@ -27,11 +27,15 @@ public class EnemyDao {
 		
 		try {
 			
-			for(int i = 0; i<rsMeta.getColumnCount(); i++) {
+			for(int i = 1; i<=rsMeta.getColumnCount(); i++) {
 				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i)));
-				String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), tempEnemy);
-				Method setterMethod = tempEnemy.getClass().getMethod("get"+fieldName, type);
-				setterMethod.invoke(tempEnemy, type.cast(row.getObject(i)));
+				
+				if(AnnotationFunctions.isFieldColumnAnnotated(rsMeta.getColumnName(i), Enemy.class)){
+					String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), Enemy.class);
+				
+					Method setterMethod = tempEnemy.getClass().getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
+					setterMethod.invoke(tempEnemy, type.cast(row.getObject(i)));
+				}
 			}
 			
 			
@@ -85,7 +89,7 @@ public class EnemyDao {
 	public List<GameCharacter> getEnemyByGameName(String gameName){
 		List<GameCharacter> results = new ArrayList<>();
 		
-		String selectEnemiesByGameStr = "SELECT * FROM "+enemyTableName+" WHERE "+AnnotationFunctions.getRowNameByFieldName("game_name", Enemy.class)+"=?";
+		String selectEnemiesByGameStr = "SELECT * FROM "+enemyTableName+" WHERE game_name=?";
 		
 		try(PreparedStatement preparedSelectEnemiesByGame = conn.prepareStatement(selectEnemiesByGameStr)){
 			
@@ -107,11 +111,11 @@ public class EnemyDao {
 	}
 	
 	public void addEnemy(Enemy enemy, String conceptName) {
-		String name = AnnotationFunctions.getRowNameByFieldName("name", enemy);
-		String powers = AnnotationFunctions.getRowNameByFieldName("powers", enemy);
-		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", enemy);
-		String movePattern = AnnotationFunctions.getRowNameByFieldName("movePattern", enemy);
-		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", enemy);
+		String name = AnnotationFunctions.getRowNameByFieldName("name", Enemy.class);
+		String powers = AnnotationFunctions.getRowNameByFieldName("powers", Enemy.class);
+		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", Enemy.class);
+		String movePattern = AnnotationFunctions.getRowNameByFieldName("movePattern", Enemy.class);
+		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", Enemy.class);
 		
 		String insertPlayerStr = "INSERT INTO "+enemyTableName+"("+name+","
 				+powers+","+appearance+","+movePattern+","+game_title+") VALUES (?, ?, ?, ?, ?)";

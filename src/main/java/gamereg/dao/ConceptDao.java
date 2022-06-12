@@ -20,11 +20,13 @@ public class ConceptDao {
 
 	private Connection conn;
 	private String conceptsTableName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
-	PlayerDao playerDao = new PlayerDao(this.conn);
-	EnemyDao enemyDao = new EnemyDao(this.conn);
+	PlayerDao playerDao;
+	EnemyDao enemyDao;
 	
 	public ConceptDao (Connection conn) {
 		this.conn = conn;
+		 playerDao = new PlayerDao(this.conn);
+		 enemyDao = new EnemyDao(this.conn);
 		//check if table for concept exists
 	}
 	
@@ -45,19 +47,19 @@ public class ConceptDao {
 
 			Class<? extends Concept> conceptClass = tempConcept.getClass();
 			
-			for(int i = 0; i<length; i++) {
+			for(int i = 1; i<=length; i++) {
 				String colName = rsMeta.getColumnName(i);
 				JDBCType colType = JDBCType.valueOf(rsMeta.getColumnType(i));
 				//TODO perhaps create ColumnSetter(columnName="name") annotation
 				
 				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(colType.getName()));
 				//TODO should also add check for genre to cast properly
-				Method fieldSetter = conceptClass.getMethod("set"+AnnotationFunctions.getFieldNameByRowName(colName, Concept.class), type);
-				
+				String fieldName = AnnotationFunctions.getFieldNameByRowName(colName, Concept.class);
+				Method fieldSetter = conceptClass.getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
 				/*used to set the corresponding field properly, if no setter found i.e. no provided or called something else it is skipped,
 				this way only concepts but not their characters would be read*/ 
 				if(fieldSetter != null) {				
-					fieldSetter.invoke(fieldSetter, type.cast(rs.getObject(i)));
+					fieldSetter.invoke(tempConcept, type.cast(rs.getObject(i)));
 				}	
 			}
 			
@@ -108,8 +110,8 @@ public class ConceptDao {
 		String descriptionColName = AnnotationFunctions.getRowNameByFieldName("description", Concept.class);
 		String genreColName = AnnotationFunctions.getRowNameByFieldName("genre", Concept.class);
 		
-		String addConceptStr = "INSERT INTO "+conceptsTableName+" ("+ titleColName+","
-				+ descriptionColName+","+ genreColName+") VALUES (?, ?, ?)";
+		String addConceptStr = "INSERT INTO "+conceptsTableName+" ("+ titleColName+", "
+				+ descriptionColName+", "+ genreColName+") VALUES (?, ?, ?)";
 		try(PreparedStatement preparedAddConcept = conn.prepareStatement(addConceptStr)){
 			
 			preparedAddConcept.setString(1, concept.getTitle());
