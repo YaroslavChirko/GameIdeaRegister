@@ -4,17 +4,20 @@ import java.lang.reflect.Field;
 
 import gamereg.dao.annotations.Column;
 import gamereg.dao.annotations.Table;
-import gamereg.dao.models.Enemy;
 
 public class AnnotationFunctions {
 
-	public static String getTableNameFromAnnotation(Class entity) {
+	public static String getTableNameFromAnnotation(Class<?> entity) {
+		String result = null;
+		if(entity.isAnnotationPresent(Table.class)) {
+			Table t1 = (Table) entity.getAnnotation(Table.class);
+			result = getTableNameFromAnnotation(entity, t1);
+		}
 		
-		Table t1 = (Table) entity.getAnnotation(Table.class);
-		return getTableNameFromAnnotation(entity, t1);
+		return result;
 	}
 	
-	public static String getTableNameFromAnnotation(Class entity, Table table) {
+	public static String getTableNameFromAnnotation(Class<?> entity, Table table) {
 		String nameFromAnnotation = table.name();
 		if(nameFromAnnotation.equals(""))  nameFromAnnotation = entity.getSimpleName();
 		
@@ -22,8 +25,9 @@ public class AnnotationFunctions {
 	}
 	
 	public static String getFieldNameFromAnnotation(Field field) {
-		return  getFieldNameFromAnnotation(field, field.getAnnotation(Column.class));
-		
+		String result = null;
+		if(field.isAnnotationPresent(Column.class)) result =  getFieldNameFromAnnotation(field, field.getAnnotation(Column.class));
+		return result;
 	}
 	
 	public static String getFieldNameFromAnnotation(Field field, Column column) {
@@ -42,7 +46,7 @@ public class AnnotationFunctions {
 	 * @param fieldName
 	 * @return row name from the annotation
 	 */
-	public static String getRowNameByFieldName(String fieldName,Class entity) {
+	public static String getRowNameByFieldName(String fieldName, Class<?> entity) {
 		String rowName = null;
 		if(AnnotationFunctions.isFieldColumnAnnotated(fieldName, entity)){
 			try {
@@ -63,7 +67,7 @@ public class AnnotationFunctions {
 	 * @param rowName
 	 * @return returns name of the corresponding field or null if no annotated field was found
 	 */
-	public static  String getFieldNameByRowName(String rowName, Class entity) {
+	public static  String getFieldNameByRowName(String rowName, Class<?> entity) {
 		String fieldName = null;
 		Field[] fields = entity.getDeclaredFields();
 		for(Field field : fields) {
@@ -84,14 +88,14 @@ public class AnnotationFunctions {
 	}
 	
 	
-	public static boolean isFieldColumnAnnotated(String rowName, Class entity) {
+	public static boolean isFieldColumnAnnotated(String rowName, Class<?> entity) {
 		boolean isAnnotated = false;
 		if(!rowName.equals("")) {
 			Field[] fields = entity.getDeclaredFields();
 			
 			for(Field field : fields) {
 				if(field.isAnnotationPresent(Column.class) && 
-						(rowName.equals(field.getName().toLowerCase()) || rowName.equals(field.getAnnotation(Column.class).name()))) {
+						(rowName.equals(field.getName()) || rowName.equals(field.getAnnotation(Column.class).name()))) {
 					isAnnotated = true;
 				}
 			}

@@ -20,14 +20,22 @@ public class ConceptDao {
 
 	private Connection conn;
 	private String conceptsTableName = AnnotationFunctions.getTableNameFromAnnotation(Concept.class);
-	PlayerDao playerDao;
-	EnemyDao enemyDao;
+	private PlayerDao playerDao;
+	private EnemyDao enemyDao;
 	
 	public ConceptDao (Connection conn) {
 		this.conn = conn;
 		 playerDao = new PlayerDao(this.conn);
 		 enemyDao = new EnemyDao(this.conn);
 		//check if table for concept exists
+	}
+	
+	public void setPlayerDao(PlayerDao playerDao) {
+		this.playerDao = playerDao;
+	}
+	
+	public void setEnemyDao(EnemyDao enemyDao) {
+		this.enemyDao = enemyDao;
 	}
 	
 	
