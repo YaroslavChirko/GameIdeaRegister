@@ -11,7 +11,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-import gamereg.dao.models.Enemy;
 import gamereg.dao.models.GameCharacter;
 import gamereg.dao.models.Player;
 
@@ -29,19 +28,24 @@ public class PlayerDao {
 		try {
 			
 			for(int i = 1; i<=rsMeta.getColumnCount(); i++) {
-				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i)));
+				Class<?> type = JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i));
 				if(AnnotationFunctions.isFieldColumnAnnotated(rsMeta.getColumnName(i), Player.class)){
 					String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), Player.class);
 					Method setterMethod = tempPlayer.getClass().getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
-					setterMethod.invoke(tempPlayer, type.cast(row.getObject(i)));
+					
+					setterMethod.setAccessible(true);
+					if(type.equals(int.class)) {
+						setterMethod.invoke(tempPlayer, (int)row.getObject(i));
+					}else {
+						setterMethod.invoke(tempPlayer, type.cast(row.getObject(i)));						
+					}
 				}
 			}
 			
 			
-		} catch (SQLException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (SQLException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
-		} 
-		
+		}
 		return tempPlayer;
 	}
 	
@@ -66,15 +70,18 @@ public class PlayerDao {
 	}
 	
 	public Player getPlayerById(int id) {
-		String getPlayerStr = "SELECT * FROM "+playerTableName+" WHERE "+AnnotationFunctions.getFieldNameByRowName("id", Player.class)+"=?;";
+		String getPlayerStr = "SELECT * FROM "+playerTableName+" WHERE "+AnnotationFunctions.getFieldNameByRowName("id", Player.class)+" = ?;";
 		
 		try(PreparedStatement preparedGetPlayer = conn.prepareStatement(getPlayerStr)){
 			preparedGetPlayer.setInt(1, id);
-			
 			ResultSet rs = preparedGetPlayer.executeQuery();
 			ResultSetMetaData rsMeta = rs.getMetaData();
 			
-			return rowToPlayerMapper(rs, rsMeta);
+			Player resPlayer = null;
+			if(rs.next()) {
+				resPlayer = rowToPlayerMapper(rs, rsMeta);
+			}
+			return resPlayer;
 			
 		}catch(SQLException e){
 			System.out.println("SQLException in getPlayerById(): "+e.getMessage());
@@ -87,7 +94,7 @@ public class PlayerDao {
 	public List<GameCharacter> getPlayersByGameName(String gameName){
 		List<GameCharacter> results = new ArrayList<>();
 		
-		String selectPlayersByGameStr = "SELECT * FROM "+playerTableName+" WHERE game_name=?";
+		String selectPlayersByGameStr = "SELECT * FROM "+playerTableName+" WHERE game_name = ?;";
 		
 		try(PreparedStatement preparedSelectPlayersByGame = conn.prepareStatement(selectPlayersByGameStr)){
 			
@@ -115,7 +122,7 @@ public class PlayerDao {
 		String story = AnnotationFunctions.getRowNameByFieldName("story", Player.class);
 		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", Player.class);
 		
-		String insertPlayerStr = "INSERT INTO "+playerTableName+"("+name+","
+		String insertPlayerStr = "INSERT INTO "+playerTableName+" ("+name+","
 				+powers+","+appearance+","+story+","+game_title+") VALUES (?, ?, ?, ?, ?)";
 		
 		try(PreparedStatement preparedInsert = conn.prepareStatement(insertPlayerStr)){
@@ -137,21 +144,28 @@ public class PlayerDao {
 	 * Updates player with the new values, cannot change player id
 	 * @param updatedPlayer
 	 */
-	public void updatePlayer(Player updatedPlayer) {
-		StringBuffer updateStr = new StringBuffer("UPDATE "+playerTableName+" SET");
+	public int updatePlayer(Player updatedPlayer) {
+		StringBuffer updateStr = new StringBuffer("UPDATE "+playerTableName+" SET ");
 		
+		Player originalPlayer = getPlayerById(updatedPlayer.getId());
+		
+		if(originalPlayer == null) {
+			System.out.println("No player found, returning.");
+			return 0;
+		}
+		
+		String idName = AnnotationFunctions.getRowNameByFieldName("id", Player.class);
 		String name = AnnotationFunctions.getRowNameByFieldName("name", Player.class);
 		String powers = AnnotationFunctions.getRowNameByFieldName("powers", Player.class);
 		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", Player.class);
 		String story = AnnotationFunctions.getRowNameByFieldName("story", Player.class);
 		
-		Player originalPlayer = getPlayerById(updatedPlayer.getId());
 		
 		boolean isNameUpdated, isPowersUpdated, isAppearanceUpdated, isStoryUpdated;
 		isNameUpdated = isPowersUpdated = isAppearanceUpdated = isStoryUpdated = false;
 		
 		if(!updatedPlayer.getName().equals(originalPlayer.getName())) {
-			updateStr.append(name+"="+updatedPlayer.getName());
+			updateStr.append(name+" = "+updatedPlayer.getName());
 			isNameUpdated = true;
 		}
 		
@@ -159,7 +173,7 @@ public class PlayerDao {
 			if(isNameUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(powers+"="+updatedPlayer.getPowers());
+			updateStr.append(powers+" = "+updatedPlayer.getPowers());
 			isPowersUpdated = true;
 		}
 		
@@ -167,7 +181,7 @@ public class PlayerDao {
 			if(isNameUpdated || isPowersUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(appearance+"="+updatedPlayer.getAppearance());
+			updateStr.append(appearance+" = "+updatedPlayer.getAppearance());
 			isAppearanceUpdated = true;
 		}
 		
@@ -176,17 +190,16 @@ public class PlayerDao {
 					|| isAppearanceUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(story+"="+updatedPlayer.getStory());
+			updateStr.append(story+" = "+updatedPlayer.getStory());
 			isStoryUpdated = true;
 		}
 		
-		if(!(isNameUpdated && isPowersUpdated && isAppearanceUpdated && isStoryUpdated)) {
+		if(!isNameUpdated && !isPowersUpdated && !isAppearanceUpdated && !isStoryUpdated) {
 			System.out.println("Nothing changed, returning");
-			return;
+			return 0;
 		}else {
-			updateStr.append(");");
+			updateStr.append(" WHERE "+idName+" = ?;");
 		}
-		
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateStr.toString())){
 			int paramCount = 1;
 			
@@ -207,7 +220,9 @@ public class PlayerDao {
 				paramCount++;
 			}
 			
-			preparedUpdate.executeUpdate();
+			preparedUpdate.setInt(paramCount, updatedPlayer.getId());
+			
+			return preparedUpdate.executeUpdate();
 		}catch(SQLException e) {
 			System.out.println("SQLException in updatePlayer(): "+e.getMessage());
 			throw new RuntimeException(e);

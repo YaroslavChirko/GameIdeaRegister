@@ -28,18 +28,23 @@ public class EnemyDao {
 		try {
 			
 			for(int i = 1; i<=rsMeta.getColumnCount(); i++) {
-				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i)));
+				Class<?> type = JavaTypeSQLTypeMapper.mapSQLToJava(rsMeta.getColumnTypeName(i));
 				
 				if(AnnotationFunctions.isFieldColumnAnnotated(rsMeta.getColumnName(i), Enemy.class)){
 					String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), Enemy.class);
 				
 					Method setterMethod = tempEnemy.getClass().getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
-					setterMethod.invoke(tempEnemy, type.cast(row.getObject(i)));
+					//setterMethod.setAccessible(true);
+					if(type.equals(int.class)) {
+						setterMethod.invoke(tempEnemy, (int)row.getObject(i));
+					}else {
+						setterMethod.invoke(tempEnemy, type.cast(row.getObject(i)));
+					}
 				}
 			}
 			
 			
-		} catch (SQLException | NoSuchMethodException | SecurityException | ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (SQLException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			e.printStackTrace();
 		} 
 		
@@ -67,7 +72,7 @@ public class EnemyDao {
 	}
 	
 	public Enemy getEnemyById(int id) {
-		String getEnemyStr = "SELECT * FROM "+enemyTableName+" WHERE "+AnnotationFunctions.getFieldNameByRowName("id", Enemy.class)+"=?;";
+		String getEnemyStr = "SELECT * FROM "+enemyTableName+" WHERE "+AnnotationFunctions.getFieldNameByRowName("id", Enemy.class)+" = ?;";
 		
 		try(PreparedStatement preparedGetEnemy = conn.prepareStatement(getEnemyStr)){
 			preparedGetEnemy.setInt(1, id);
@@ -75,7 +80,12 @@ public class EnemyDao {
 			ResultSet rs = preparedGetEnemy.executeQuery();
 			ResultSetMetaData rsMeta = rs.getMetaData();
 			
-			return rowToEnemyMapper(rs, rsMeta);
+			Enemy resEnemy = null;
+			if(rs.next()) {
+				resEnemy = rowToEnemyMapper(rs, rsMeta);
+			}
+			
+			return resEnemy;
 			
 		}catch(SQLException e){
 			System.out.println("SQLException in getEnemyById(): "+e.getMessage());
@@ -86,10 +96,10 @@ public class EnemyDao {
 	}
 	
 	
-	public List<GameCharacter> getEnemyByGameName(String gameName){
+	public List<GameCharacter> getEnemiesByGameName(String gameName){
 		List<GameCharacter> results = new ArrayList<>();
 		
-		String selectEnemiesByGameStr = "SELECT * FROM "+enemyTableName+" WHERE game_name=?";
+		String selectEnemiesByGameStr = "SELECT * FROM "+enemyTableName+" WHERE game_name = ?;";
 		
 		try(PreparedStatement preparedSelectEnemiesByGame = conn.prepareStatement(selectEnemiesByGameStr)){
 			
@@ -139,9 +149,10 @@ public class EnemyDao {
 	 * Updates enemy with the new values, cannot change enemy id
 	 * @param updatedPlayer
 	 */
-	public void updateEnemy(Enemy updatedEnemy) {
-		StringBuffer updateStr = new StringBuffer("UPDATE "+enemyTableName+" SET");
+	public int updateEnemy(Enemy updatedEnemy) {
+		StringBuffer updateStr = new StringBuffer("UPDATE "+enemyTableName+" SET ");
 		
+		String idName = AnnotationFunctions.getFieldNameByRowName("id", Enemy.class);
 		String name = AnnotationFunctions.getRowNameByFieldName("name", Enemy.class);
 		String powers = AnnotationFunctions.getRowNameByFieldName("powers", Enemy.class);
 		String appearance = AnnotationFunctions.getRowNameByFieldName("appearance", Enemy.class);
@@ -149,11 +160,16 @@ public class EnemyDao {
 		
 		Enemy originalEnemy = getEnemyById(updatedEnemy.getId());
 		
+		if(originalEnemy == null) {
+			System.out.println("No enemy found, returning");
+			return 0;
+		}
+		
 		boolean isNameUpdated, isPowersUpdated, isAppearanceUpdated, isMovePatternUpdated;
 		isNameUpdated = isPowersUpdated = isAppearanceUpdated = isMovePatternUpdated = false;
 		
 		if(!updatedEnemy.getName().equals(originalEnemy.getName())) {
-			updateStr.append(name+"="+updatedEnemy.getName());
+			updateStr.append(name+" = "+updatedEnemy.getName());
 			isNameUpdated = true;
 		}
 		
@@ -161,7 +177,7 @@ public class EnemyDao {
 			if(isNameUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(powers+"="+updatedEnemy.getPowers());
+			updateStr.append(powers+" = "+updatedEnemy.getPowers());
 			isPowersUpdated = true;
 		}
 		
@@ -169,7 +185,7 @@ public class EnemyDao {
 			if(isNameUpdated || isPowersUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(appearance+"="+updatedEnemy.getAppearance());
+			updateStr.append(appearance+" = "+updatedEnemy.getAppearance());
 			isAppearanceUpdated = true;
 		}
 		
@@ -178,17 +194,17 @@ public class EnemyDao {
 					|| isAppearanceUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(movePattern+"="+updatedEnemy.getMovePattern());
+			updateStr.append(movePattern+" = "+updatedEnemy.getMovePattern());
 			isMovePatternUpdated = true;
 		}
 		
-		if(!(isNameUpdated && isPowersUpdated && isAppearanceUpdated && isMovePatternUpdated)) {
+		if(!isNameUpdated && !isPowersUpdated && !isAppearanceUpdated && !isMovePatternUpdated) {
 			System.out.println("Nothing changed, returning");
-			return;
+			return 0;
 		}else {
-			updateStr.append(");");
+			updateStr.append(" WHERE "+idName+" = ?;");
 		}
-		
+
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateStr.toString())){
 			int paramCount = 1;
 			
@@ -209,7 +225,8 @@ public class EnemyDao {
 				paramCount++;
 			}
 			
-			preparedUpdate.executeUpdate();
+			preparedUpdate.setInt(paramCount, updatedEnemy.getId());
+			return preparedUpdate.executeUpdate();
 		}catch(SQLException e) {
 			System.out.println("SQLException in updateEnemy(): "+e.getMessage());
 			throw new RuntimeException(e);

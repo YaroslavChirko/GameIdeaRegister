@@ -73,6 +73,36 @@ public class Concept {
 	}
 	
 	
+	
+	@Override
+	public boolean equals(Object obj) {
+		boolean result = false;
+		if(obj.getClass() == this.getClass()) {
+			Concept other = (Concept)obj;
+			result = this.title.equals(other.getTitle()) 
+					&& this.getDescription().equals(other.getDescription()) 
+					&& this.getGenre().equals(other.getGenre());
+		}
+		return result;
+	}
+
+	
+
+	@Override
+	//since we don't use  game characters in the equals they are omitted here as well
+	public int hashCode() {
+		int result = 11;
+		int prime = 17;
+		
+		result = prime * result + title.hashCode();
+		result = prime * result + description.hashCode();
+		result = prime * result + genre.hashCode();
+		
+		return result;
+	}
+
+
+
 	public enum Genre{
 		ACTION,
 		ADVENTURE,

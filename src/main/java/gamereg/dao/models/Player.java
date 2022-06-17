@@ -23,6 +23,17 @@ public class Player implements GameCharacter {
 	@Column(name = "story", size = 2000)
 	private String story;
 	
+	
+	public Player() {}
+	
+	public Player(int id, String name, String powers, String appearance, String story) {
+		this.id = id;
+		this.name = name;
+		this.powers = powers;
+		this.appearance = appearance;
+		this.story = story;
+	}
+	
 	public int getId() {
 		return id;
 	}
@@ -69,7 +80,35 @@ public class Player implements GameCharacter {
 
 	@Override
 	public String toString() {
-		return "Player: "+name+",\nlooks like: "+appearance+",\n"+story+"\n special abilities: "+powers;
+		return "Player: "+name+",\nlooks like: "+appearance+",\n"+story+"\nspecial abilities: "+powers;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		boolean result = false;
+		if(obj.getClass().equals(this.getClass())) {
+			Player otherP = (Player)obj;
+			result = this.id==otherP.id && this.name.equals(otherP.getName()) 
+					&& this.powers.equals(otherP.getPowers())
+					&& this.appearance.equals(otherP.getAppearance())
+					&&this.story.equals(otherP.getStory());
+		}
+		
+		return result;
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = 9;
+		int prime = 29;
+		
+		result = prime * result + id;
+		result = prime * result + name.hashCode();
+		result = prime * result + powers.hashCode();
+		result = prime * result + appearance.hashCode();
+		result = prime * result + story.hashCode();
+		
+		return result;
 	}
 	
 	

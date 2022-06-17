@@ -52,7 +52,6 @@ public class ConceptDao {
 		Concept tempConcept = new Concept();
 		try {
 			length = rsMeta.getColumnCount();
-
 			Class<? extends Concept> conceptClass = tempConcept.getClass();
 			
 			for(int i = 1; i<=length; i++) {
@@ -60,7 +59,7 @@ public class ConceptDao {
 				JDBCType colType = JDBCType.valueOf(rsMeta.getColumnType(i));
 				//TODO perhaps create ColumnSetter(columnName="name") annotation
 				
-				Class<?> type = Class.forName(JavaTypeSQLTypeMapper.mapSQLToJava(colType.getName()));
+				Class<?> type = JavaTypeSQLTypeMapper.mapSQLToJava(colType.getName());
 				//TODO should also add check for genre to cast properly
 				String fieldName = AnnotationFunctions.getFieldNameByRowName(colName, Concept.class);
 				Method fieldSetter = conceptClass.getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
@@ -74,7 +73,7 @@ public class ConceptDao {
 			
 		} catch (SQLException | IllegalAccessException | IllegalArgumentException 
 				| InvocationTargetException | NoSuchMethodException 
-				| SecurityException | ClassNotFoundException e) {
+				| SecurityException e) {
 			e.printStackTrace();
 		}
 		return tempConcept;
@@ -99,7 +98,11 @@ public class ConceptDao {
 			while(rs.next()) {
 				Concept tempConcept = rowToConceptMapper(rs, rsMeta);
 				List<GameCharacter> characters  = playerDao.getPlayersByGameName(tempConcept.getTitle());
-				characters.addAll(enemyDao.getEnemyByGameName(tempConcept.getTitle()));
+				List<GameCharacter> enemies = enemyDao.getEnemiesByGameName(tempConcept.getTitle());
+				if(enemies!=null) {
+					characters.addAll(enemies);
+				}
+				
 				tempConcept.setCharacters(characters);
 				concepts.add(tempConcept);
 			}
@@ -113,6 +116,31 @@ public class ConceptDao {
 		return concepts;
 	}
 	
+	public Concept getConceptByTitle(String title) {
+		String titleColumnName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
+		String getConceptByNameStr = "SELECT * FROM "+conceptsTableName+" WHERE "+titleColumnName+" = ?;";
+		
+		try(PreparedStatement preparedGetByName = conn.prepareStatement(getConceptByNameStr)){
+			preparedGetByName.setString(1, title);
+			
+			ResultSet rs = preparedGetByName.executeQuery();
+			
+			Concept retrievedConcept = null;
+			if(rs.next()) {
+				retrievedConcept = rowToConceptMapper(rs, rs.getMetaData());
+			}
+			
+			return retrievedConcept;
+		}catch(SQLException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	 * Method to add a new concept to the table, note that game characters won't be added as they are added in a separate call
+	 * @param concept
+	 */
 	public void addConcept(Concept concept) {
 		String titleColName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
 		String descriptionColName = AnnotationFunctions.getRowNameByFieldName("description", Concept.class);
@@ -137,14 +165,21 @@ public class ConceptDao {
 	/**Method to update concept information call
 	 * @param originalTitle the current title of concept
 	 * @param concept object of type concept with updated fields
+	 * 
+	 * @return number of rows altered (either 0 or 1 since the title must be original)
 	 */
-	public void updateConcept(String originalTitle, Concept updatedConcept) {
+	public int updateConcept(String originalTitle, Concept updatedConcept) {
 		//call to retrive concept
 		
 		Concept retrievedConcept = getConceptByTitle(originalTitle);
 		if(retrievedConcept == null) {
 			System.out.println("Concept wasn\'t found");
-			return;
+			return 0;
+		}
+		
+		if((!updatedConcept.getTitle().equals(originalTitle)) && getConceptByTitle(updatedConcept.getTitle()) != null) {
+			System.out.println("Updated title already present in the table");
+			return 0;
 		}
 		
 		
@@ -156,7 +191,7 @@ public class ConceptDao {
 		String genreColName = AnnotationFunctions.getRowNameByFieldName("genre", Concept.class);
 		
 		
-		StringBuilder updateConceptByNameStr = new StringBuilder("UPDATE "+conceptsTableName+" SET"); 
+		StringBuilder updateConceptByNameStr = new StringBuilder("UPDATE "+conceptsTableName+" SET "); 
 		if(!retrievedConcept.getTitle().equals(updatedConcept.getTitle())) {
 			updateConceptByNameStr.append(titleColName+" = ?");
 			isTitleChanged = true;
@@ -174,14 +209,13 @@ public class ConceptDao {
 			isGenreChanged = true;
 		}
 		
-		if(!(isTitleChanged || isDescriptionChanged || isGenreChanged)) {
+		if(!isTitleChanged && !isDescriptionChanged && !isGenreChanged) {
 			System.out.println("No changes made, returning");
-			return;
+			return 0;
 		}
-		updateConceptByNameStr.append("WHERE"+titleColName+" = ?;");
-		
+		updateConceptByNameStr.append(" WHERE "+titleColName+" = ?;");
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateConceptByNameStr.toString())){
-			
+			System.out.println(updateConceptByNameStr);
 			int paramCount = 1;
 			
 			if(isTitleChanged) {
@@ -199,31 +233,12 @@ public class ConceptDao {
 			preparedUpdate.setString(paramCount, originalTitle);
 			paramCount++;
 			
-			preparedUpdate.executeUpdate();
+			return preparedUpdate.executeUpdate();
 		}catch(SQLException e) {
 			e.printStackTrace();
 		}
 		
-		
-	}
-	
-	public Concept getConceptByTitle(String title) {
-		String titleColumnName = AnnotationFunctions.getRowNameByFieldName("title", Concept.class);
-		String getConceptByNameStr = "SELECT * FROM "+conceptsTableName+" WHERE"+titleColumnName+" = ?";
-		
-		try(PreparedStatement preparedUpdate = conn.prepareStatement(getConceptByNameStr)){
-			preparedUpdate.setString(1, title);
-			
-			ResultSet rs = preparedUpdate.executeQuery();
-			
-			
-			Concept retrievedConcept = rowToConceptMapper(rs, rs.getMetaData());
-			
-			return retrievedConcept;
-		}catch(SQLException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return 0;
 	}
 	
 

@@ -9,37 +9,37 @@ public class JavaTypeSQLTypeMapper {
 	 * Could be used with some data types, if it's not present returns null
 	 * 
 	 * @param typeName
-	 * @return class name 
+	 * @return class 
 	 */
-	public static String mapSQLToJava(String typeName) {
+	public static Class<?> mapSQLToJava(String typeName) {
 		JDBCType typeValue = JDBCType.valueOf(typeName);
-		String result = null;
+		Class<?> result = null;
 		switch(typeValue) {
 			case CHAR:
 			case VARCHAR:
 			case LONGVARCHAR:
-				result =  java.lang.String.class.getName();
+				result =  java.lang.String.class;
 				break;
 			case INTEGER:
-				result =  int.class.getName();
+				result =  int.class;
 				break;
 			case FLOAT:
-				result =  float.class.getName();
+				result =  float.class;
 				break;
 			case DOUBLE:
-				result =  double.class.getName();
+				result =  double.class;
 				break;
 			case BOOLEAN:
-				result = boolean.class.getName();
+				result = boolean.class;
 				break;
 			case DATE:
-				result =  java.time.LocalDate.class.getName();
+				result =  java.time.LocalDate.class;
 				break;
 			case TIME:
-				result =  java.time.LocalTime.class.getName();
+				result =  java.time.LocalTime.class;
 				break;
 			case TIMESTAMP:
-				result =  java.time.LocalDateTime.class.getName();
+				result =  java.time.LocalDateTime.class;
 				break;
 		}
 		

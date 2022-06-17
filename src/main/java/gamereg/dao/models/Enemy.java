@@ -17,6 +17,15 @@ public class Enemy implements GameCharacter {
 	@Column (size = 500)
 	private String movePattern;
 	
+	public Enemy() {}
+	
+	public Enemy(int id, String name, String appearance, String powers, String movePattern) {
+		this.id = id;
+		this.name = name;
+		this.appearance = appearance;
+		this.powers = powers;
+		this.movePattern = movePattern;
+	}
 	public int getId() {
 		return id;
 	}
@@ -54,6 +63,44 @@ public class Enemy implements GameCharacter {
 	public void setMovePattern(String movePattern) {
 		this.movePattern = movePattern;
 	}
+	
+	
+	
+	@Override
+	public String toString() {
+		return "Enemy: "+name+",\nlooks like: "+appearance+",\ncan: "+powers+"\nmove pattern: "+movePattern;
+		
+		
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		boolean result = false;
+		if(obj.getClass().equals(this.getClass())) {
+			Enemy otherE = (Enemy)obj;
+			result = this.id==otherE.id && this.name.equals(otherE.getName()) 
+					&& this.powers.equals(otherE.getPowers())
+					&& this.appearance.equals(otherE.getAppearance())
+					&&this.movePattern.equals(otherE.getMovePattern());
+		}
+		
+		return result;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = 7;
+		int prime = 23;
+		
+		result = prime * result + id;
+		result = prime * result + name.hashCode();
+		result = prime * result + powers.hashCode();
+		result = prime * result + appearance.hashCode();
+		result = prime * result + movePattern.hashCode();
+		
+		return result;
+	}
+
 	
 	
 
