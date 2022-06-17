@@ -47,7 +47,7 @@ public class EnemyDaoTest {
 		Mockito.when(rsMetaMock.getColumnName(2)).thenReturn("name");
 		Mockito.when(rsMetaMock.getColumnName(3)).thenReturn("appearance");
 		Mockito.when(rsMetaMock.getColumnName(4)).thenReturn("powers");
-		Mockito.when(rsMetaMock.getColumnName(5)).thenReturn("movePattern");
+		Mockito.when(rsMetaMock.getColumnName(5)).thenReturn("move_pattern");
 		
 		Mockito.when(rsMetaMock.getColumnType(1)).thenReturn(Types.INTEGER);
 		Mockito.when(rsMetaMock.getColumnType(2)).thenReturn(Types.VARCHAR);
@@ -223,16 +223,12 @@ public class EnemyDaoTest {
 	public EnemyDao initTestUpdateEnemy() throws SQLException {
 		PreparedStatement preparedMock = Mockito.mock(PreparedStatement.class);
 		
-		PreparedStatement updateMock1 = Mockito.mock(PreparedStatement.class);
-		PreparedStatement updateMock2 = Mockito.mock(PreparedStatement.class);
-		PreparedStatement updateMock3 = Mockito.mock(PreparedStatement.class);
+		PreparedStatement updateMock = Mockito.mock(PreparedStatement.class);
 		ResultSet resultMock1 = Mockito.mock(ResultSet.class);
 		ResultSet resultMock2 = Mockito.mock(ResultSet.class);
 		ResultSet resultMock3 = Mockito.mock(ResultSet.class);
 		
-		Mockito.when(connMock.prepareStatement("UPDATE Enemy SET name = "+names[0]+" WHERE id = ?;")).thenReturn(updateMock1);
-		Mockito.when(connMock.prepareStatement("UPDATE Enemy SET name = "+names[1]+" WHERE id = ?;")).thenReturn(updateMock2);
-		Mockito.when(connMock.prepareStatement("UPDATE Enemy SET name = DoughNard WHERE id = ?;")).thenReturn(updateMock3);
+		Mockito.when(connMock.prepareStatement("UPDATE Enemy SET name = ? WHERE id = ?;")).thenReturn(updateMock);
 		
 		Mockito.when(connMock.prepareStatement("SELECT * FROM Enemy WHERE id = ?;")).thenReturn(preparedMock);
 		
@@ -257,29 +253,35 @@ public class EnemyDaoTest {
 		Mockito.when(resultMock3.next()).thenReturn(false);
 		
 		Mockito.doAnswer( i->{
-			Mockito.when(updateMock1.executeUpdate()).thenReturn(0);
-			Mockito.when(updateMock2.executeUpdate()).thenReturn(1);
-			Mockito.when(updateMock3.executeUpdate()).thenReturn(1);
 			Mockito.when(preparedMock.executeQuery()).thenReturn(resultMock1);
 			return null;
 		}).when(preparedMock).setInt(1, 1);
 		
 		Mockito.doAnswer( i->{
-			Mockito.when(updateMock1.executeUpdate()).thenReturn(1);
-			Mockito.when(updateMock2.executeUpdate()).thenReturn(0);
-			Mockito.when(updateMock3.executeUpdate()).thenReturn(1);
 			Mockito.when(preparedMock.executeQuery()).thenReturn(resultMock2);
 			return null;
 		}).when(preparedMock).setInt(1, 2);
 		
 		Mockito.doAnswer( i->{
-			Mockito.when(updateMock1.executeUpdate()).thenReturn(0);
-			Mockito.when(updateMock2.executeUpdate()).thenReturn(0);
-			Mockito.when(updateMock3.executeUpdate()).thenReturn(0);
 			Mockito.when(preparedMock.executeQuery()).thenReturn(resultMock3);
 			return null;
 		}).when(preparedMock).setInt(1, 3);
 		
+
+		Mockito.doAnswer( i->{
+			Mockito.when(updateMock.executeUpdate()).thenReturn(0);
+			return null;
+		}).when(updateMock).setString(1, names[0]);
+		
+		Mockito.doAnswer( i->{
+			Mockito.when(updateMock.executeUpdate()).thenReturn(1);
+			return null;
+		}).when(updateMock).setString(1, names[1]);
+		
+		Mockito.doAnswer( i->{
+			Mockito.when(updateMock.executeUpdate()).thenReturn(1);
+			return null;
+		}).when(updateMock).setString(1, "DoughNard");
 		
 		
 		return new EnemyDao(connMock);

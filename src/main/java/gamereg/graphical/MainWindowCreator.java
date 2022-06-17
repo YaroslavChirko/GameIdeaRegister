@@ -1,21 +1,22 @@
 package gamereg.graphical;
 
-import java.util.Collections;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableModel;
 
 import gamereg.dao.ConceptDao;
 import gamereg.dao.ConnectionLayer;
 import gamereg.dao.models.Concept;
-import gamereg.dao.models.GameCharacter;
 
 public class MainWindowCreator {
 	JFrame mainFrame;
@@ -68,6 +69,8 @@ public class MainWindowCreator {
 			
 		});
 		
+		addTableContextMenu(conceptTable);
+		
 		JButton addConceptButton = new JButton("Add Concept");
 		addConceptButton.addActionListener( e-> {
 			//call to create window
@@ -86,6 +89,50 @@ public class MainWindowCreator {
 		//add buttons to add player characters and enemies (to the row, opens a new window)
 	
 		frame.add(panel);
+		
+	}
+	
+	private void addTableContextMenu(JTable table) {
+		JPopupMenu popup = new JPopupMenu();
+		
+		JMenuItem inspect = new JMenuItem("Inspect");
+		JMenuItem edit = new JMenuItem("Edit");
+		JMenuItem delete = new JMenuItem("Delete");
+		
+		inspect.addActionListener( e-> {
+			String name = (String)table.getModel().getValueAt(table.getSelectedRow(), 0);
+			new InspectConceptFrame(conceptDao, name).toggleVisibility();
+		});
+		
+		edit.addActionListener( e-> {
+			//call to open update Window
+			String name = (String)table.getModel().getValueAt(table.getSelectedRow(), 0);
+			new EditFrame(conceptDao, name).toggleVisibility();
+		});
+		
+		delete.addActionListener( e-> {
+			//call to dao delete row
+			String name = (String)table.getModel().getValueAt(table.getSelectedRow(), 0);
+			System.out.println("Deleting concept: "+name);
+			conceptDao.deleteConceptByTitle(name);
+		});
+		
+		popup.add(inspect);
+		popup.add(edit);
+		popup.add(delete);
+		
+		table.addMouseListener(new MouseAdapter() {
+
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if(e.getButton() == MouseEvent.BUTTON3) {
+					popup.show(table, e.getX(), e.getY());
+				}
+				
+			}	
+		});
+		
+		
 	}
 
 	/*private class ConceptTableModel extends AbstractTableModel{

@@ -10,34 +10,40 @@ import javax.swing.JTextField;
 import gamereg.dao.ConceptDao;
 import gamereg.dao.models.Concept;
 
-public class AddConceptWindow extends JFrame{
+public class EditFrame extends JFrame {
 	private static final long serialVersionUID = 1L;
 	
+	private ConceptDao conceptDao;
+	private Concept toEdit;
 	private JTextField title;
 	private JTextArea description;
 	private JList<Concept.Genre> genre;
 	private JButton addConceptButton = new JButton("Add concept");
 	
-	ConceptDao conceptDao;
 	
-	public AddConceptWindow(ConceptDao conceptDao){
+	public EditFrame(ConceptDao conceptDao, String name) {
+		this.conceptDao = conceptDao;
+		this.toEdit = conceptDao.getConceptByTitle(name);
+	
 		this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.Y_AXIS));
 		this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		this.setVisible(false);//it is only made visible by another window
+		this.setVisible(false);
 		
+		init(toEdit);
 		
-		this.conceptDao = conceptDao;
-		
-		init();
 		this.pack();
 	}
 	
-	//can make it an initialization block instead
-	private void init() {
+	private void init(Concept toEdit) {
 		title = new JTextField(100);
+		title.setText(toEdit.getTitle());
+		
 		description = new JTextArea(10, 200);
 		description.setEditable(true);
+		description.setText(toEdit.getDescription());
+		
 		genre = new JList<Concept.Genre>(Concept.Genre.values());
+		genre.setSelectedIndex(toEdit.getGenreEnum().ordinal());
 		
 		addConceptButton.addActionListener( e-> {
 			Concept toAdd = new Concept();
@@ -45,7 +51,7 @@ public class AddConceptWindow extends JFrame{
 			toAdd.setDescription(description.getText().substring(0, Math.min(2000, description.getText().length())));
 			toAdd.setGenre(genre.getSelectedValue());
 			
-			conceptDao.addConcept(toAdd);
+			conceptDao.updateConcept(toEdit.getTitle() , toAdd);
 			
 			this.dispose();
 		});
@@ -59,5 +65,6 @@ public class AddConceptWindow extends JFrame{
 	public void toggleVisibility() {
 		this.setVisible(!this.isVisible());
 	}
+	
 	
 }

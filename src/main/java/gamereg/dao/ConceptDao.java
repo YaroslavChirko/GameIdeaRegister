@@ -38,10 +38,14 @@ public class ConceptDao {
 		this.enemyDao = enemyDao;
 	}
 	
-	
-	
-	
-	
+	public PlayerDao getPlayerDao() {
+		return playerDao;
+	}
+
+	public EnemyDao getEnemyDao() {
+		return enemyDao;
+	}
+
 	/**
 	 * Used to map resultSet row to a Concept object
 	 * 
@@ -128,6 +132,14 @@ public class ConceptDao {
 			Concept retrievedConcept = null;
 			if(rs.next()) {
 				retrievedConcept = rowToConceptMapper(rs, rs.getMetaData());
+			
+				List<GameCharacter> characters  = playerDao.getPlayersByGameName(retrievedConcept.getTitle());
+				List<GameCharacter> enemies = enemyDao.getEnemiesByGameName(retrievedConcept.getTitle());
+				if(enemies!=null) {
+					characters.addAll(enemies);
+				}
+				
+				retrievedConcept.setCharacters(characters);
 			}
 			
 			return retrievedConcept;
@@ -215,7 +227,6 @@ public class ConceptDao {
 		}
 		updateConceptByNameStr.append(" WHERE "+titleColName+" = ?;");
 		try(PreparedStatement preparedUpdate = conn.prepareStatement(updateConceptByNameStr.toString())){
-			System.out.println(updateConceptByNameStr);
 			int paramCount = 1;
 			
 			if(isTitleChanged) {
@@ -239,6 +250,19 @@ public class ConceptDao {
 		}
 		
 		return 0;
+	}
+	
+	
+	public void deleteConceptByTitle(String title) {
+		try(PreparedStatement preparedDelete = conn.prepareStatement("DELETE FROM "+conceptsTableName+" WHERE "+AnnotationFunctions.getRowNameByFieldName("title", Concept.class)+" = ?;")){
+			preparedDelete.setString(1, title);
+			
+			preparedDelete.executeUpdate();
+		}catch(SQLException e) {
+			System.out.println("SQLException in deleteConceptByTitle(): "+e.getMessage());
+			throw new RuntimeException(e);
+		}
+		
 	}
 	
 

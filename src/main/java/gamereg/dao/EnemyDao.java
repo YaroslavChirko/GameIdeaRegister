@@ -32,7 +32,17 @@ public class EnemyDao {
 				
 				if(AnnotationFunctions.isFieldColumnAnnotated(rsMeta.getColumnName(i), Enemy.class)){
 					String fieldName = AnnotationFunctions.getFieldNameByRowName(rsMeta.getColumnName(i), Enemy.class);
-				
+					
+					if(fieldName.contains("_")) {
+						String[] nameComp = fieldName.split("_");
+						StringBuilder properFieldName = new StringBuilder(nameComp[0]);
+						for(int c = 1; c<nameComp.length; c++) {
+							properFieldName.append(nameComp[c].substring(0,1).toUpperCase());
+							properFieldName.append(nameComp[c].substring(1, nameComp[c].length()));
+						}
+						fieldName = properFieldName.toString();
+					}
+					
 					Method setterMethod = tempEnemy.getClass().getMethod("set"+fieldName.substring(0,1).toUpperCase()+fieldName.substring(1,fieldName.length()), type);
 					//setterMethod.setAccessible(true);
 					if(type.equals(int.class)) {
@@ -128,7 +138,7 @@ public class EnemyDao {
 		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", Enemy.class);
 		
 		String insertPlayerStr = "INSERT INTO "+enemyTableName+"("+name+","
-				+powers+","+appearance+","+movePattern+","+game_title+") VALUES (?, ?, ?, ?, ?)";
+				+powers+","+appearance+","+movePattern+",game_name) VALUES (?, ?, ?, ?, ?)";
 		
 		try(PreparedStatement preparedInsert = conn.prepareStatement(insertPlayerStr)){
 			preparedInsert.setString(1, enemy.getName());
@@ -169,7 +179,7 @@ public class EnemyDao {
 		isNameUpdated = isPowersUpdated = isAppearanceUpdated = isMovePatternUpdated = false;
 		
 		if(!updatedEnemy.getName().equals(originalEnemy.getName())) {
-			updateStr.append(name+" = "+updatedEnemy.getName());
+			updateStr.append(name+" = ?");
 			isNameUpdated = true;
 		}
 		
@@ -177,7 +187,7 @@ public class EnemyDao {
 			if(isNameUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(powers+" = "+updatedEnemy.getPowers());
+			updateStr.append(powers+" = ?");
 			isPowersUpdated = true;
 		}
 		
@@ -185,7 +195,7 @@ public class EnemyDao {
 			if(isNameUpdated || isPowersUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(appearance+" = "+updatedEnemy.getAppearance());
+			updateStr.append(appearance+" = ?");
 			isAppearanceUpdated = true;
 		}
 		
@@ -194,7 +204,7 @@ public class EnemyDao {
 					|| isAppearanceUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(movePattern+" = "+updatedEnemy.getMovePattern());
+			updateStr.append(movePattern+" = ?");
 			isMovePatternUpdated = true;
 		}
 		
@@ -232,6 +242,19 @@ public class EnemyDao {
 			throw new RuntimeException(e);
 		}
 		
+	}
+	
+	
+	public void deleteEnemyById(int id) {
+		try(PreparedStatement preparedDelete = conn.prepareStatement("DELETE FROM "+enemyTableName+" WHERE "+AnnotationFunctions.getFieldNameByRowName("id", Enemy.class)+" = ?;")){
+			
+			preparedDelete.setInt(1, id);
+			preparedDelete.executeUpdate();
+			
+		}catch(SQLException e) {
+			System.out.println("SQLException in deleteEnemyById(): "+e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 	
 	

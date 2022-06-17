@@ -123,8 +123,8 @@ public class PlayerDao {
 		String game_title = AnnotationFunctions.getRowNameByFieldName("game_name", Player.class);
 		
 		String insertPlayerStr = "INSERT INTO "+playerTableName+" ("+name+","
-				+powers+","+appearance+","+story+","+game_title+") VALUES (?, ?, ?, ?, ?)";
-		
+				+powers+","+appearance+","+story+",game_name) VALUES (?, ?, ?, ?, ?)";
+		System.out.println(insertPlayerStr);
 		try(PreparedStatement preparedInsert = conn.prepareStatement(insertPlayerStr)){
 			preparedInsert.setString(1, player.getName());
 			preparedInsert.setString(2, player.getPowers());
@@ -165,7 +165,7 @@ public class PlayerDao {
 		isNameUpdated = isPowersUpdated = isAppearanceUpdated = isStoryUpdated = false;
 		
 		if(!updatedPlayer.getName().equals(originalPlayer.getName())) {
-			updateStr.append(name+" = "+updatedPlayer.getName());
+			updateStr.append(name+" = ?");
 			isNameUpdated = true;
 		}
 		
@@ -173,7 +173,7 @@ public class PlayerDao {
 			if(isNameUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(powers+" = "+updatedPlayer.getPowers());
+			updateStr.append(powers+" = ?");
 			isPowersUpdated = true;
 		}
 		
@@ -181,7 +181,7 @@ public class PlayerDao {
 			if(isNameUpdated || isPowersUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(appearance+" = "+updatedPlayer.getAppearance());
+			updateStr.append(appearance+" = ?");
 			isAppearanceUpdated = true;
 		}
 		
@@ -190,7 +190,7 @@ public class PlayerDao {
 					|| isAppearanceUpdated) {
 				updateStr.append(", ");
 			}
-			updateStr.append(story+" = "+updatedPlayer.getStory());
+			updateStr.append(story+" = ?");
 			isStoryUpdated = true;
 		}
 		
@@ -228,6 +228,18 @@ public class PlayerDao {
 			throw new RuntimeException(e);
 		}
 		
+	}
+	
+	public void deletePlayerById(int id) {
+		try(PreparedStatement preparedDelete = conn.prepareStatement("DELETE FROM "+playerTableName+" WHERE "+AnnotationFunctions.getRowNameByFieldName("id", Player.class)+" = ?;")){
+			
+			preparedDelete.setInt(1, id);
+			preparedDelete.executeUpdate();
+			
+		}catch(SQLException e) {
+			System.out.println("SQLException in deletePlayerById(): "+e.getMessage());
+			throw new RuntimeException(e);
+		}
 	}
 	
 	

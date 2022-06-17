@@ -12,6 +12,10 @@ public class JavaTypeSQLTypeMapper {
 	 * @return class 
 	 */
 	public static Class<?> mapSQLToJava(String typeName) {
+		typeName = typeName.toUpperCase();
+		if(typeName.equals("SERIAL")) {
+			return int.class;
+		}
 		JDBCType typeValue = JDBCType.valueOf(typeName);
 		Class<?> result = null;
 		switch(typeValue) {
